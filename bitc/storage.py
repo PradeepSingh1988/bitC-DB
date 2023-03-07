@@ -14,7 +14,6 @@ from bitc.cask_file import (
 from bitc import utils
 
 
-
 class CaskKeyDirEntry(object):
     def __init__(self, file_obj, value_size, value_pos, tstamp):
         self.value_size = value_size
@@ -29,7 +28,7 @@ class CaskKeyDirEntry(object):
 
 
 class CaskFilePersistor(object):
-    def __init__(self, cask_id, file_path, os_sync=True, max_file_size=10000):
+    def __init__(self, file_path, os_sync=True, max_file_size=100000):
         self._file_path = file_path
         self._data_file = None
         self._hint_file = None
@@ -41,7 +40,7 @@ class CaskFilePersistor(object):
         self._merge_running = False
         self.logger = CustomAdapter(
             logging.getLogger(__name__),
-            {"logger": "{}:{}".format("CASKSTORAGE", cask_id)},
+            {"logger": "{}".format("CASKSTORAGE")},
         )
 
     def _get_next_id(self):
@@ -89,26 +88,6 @@ class CaskFilePersistor(object):
                 self._data_file.size + DATA_HEADER_SIZE + data_len > self._max_file_size
             ):
                 self._rotate_files()
-
-    def merge(self, keydir):
-
-        try:
-            with self._lock:
-                if self._merge_running:
-                    return False
-                else:
-                    self._merge_running = True
-                files_to_merge = utils.get_datafiles(self._file_path)
-                if not files_to_merge:
-                    return
-                last_id = utils.get_file_id_from_absolute_path(files_to_merge[-1])
-                merge_id = last_id + 1
-                self._next_id = merge_id
-                self._rotate_files()
-                with tempfile.TemporaryDirectory(dir=self._file_path) as tempdir:
-                    pass
-        finally:
-            self._merge_running = False
 
     def store(self, key, value):
         self._check_write(len(key) + len(value))
