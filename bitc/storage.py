@@ -5,7 +5,7 @@ import tempfile
 import time
 from threading import RLock
 
-from bitc.consts import DATA_HEADER_SIZE
+from bitc.consts import DATAFILE_START_INDEX, DATA_HEADER_SIZE
 from bitc.logger import CustomAdapter
 from bitc.cask_file import (
     CaskDataFile,
@@ -13,8 +13,6 @@ from bitc.cask_file import (
 )
 from bitc import utils
 
-
-DATAFILE_START_INDEX = 0
 
 
 class CaskKeyDirEntry(object):
