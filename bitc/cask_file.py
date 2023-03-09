@@ -25,10 +25,10 @@ class CaskDataEncoder(object):
         return struct.pack(consts.CRC_FORMAT, crc) + header[4:] + key + value
 
     def decode(self, value_bytes):
-        existing_crc, _, key_len, value_len = struct.unpack(
+        existing_crc, timestamp, key_len, value_len = struct.unpack(
             consts.DATA_HEADER_FORMAT, value_bytes[: consts.DATA_HEADER_SIZE]
         )
-        return existing_crc, key_len, value_len
+        return existing_crc, timestamp, key_len, value_len
 
 
 class CaskHintEncoder(object):
@@ -136,7 +136,7 @@ class CaskDataFile(CaskFile):
         fh = self._wfh if self._wfh is not None else self._rfh
         fh.seek(offset, consts.WHENCE_BEGINING)
         value_bytes = fh.read(size)
-        crc, key_len, value_len = self._encoder.decode(value_bytes)
+        crc, _, key_len, value_len = self._encoder.decode(value_bytes)
         if consts.DATA_HEADER_SIZE + key_len + value_len != size:
             raise CaskIOException("Bad Entry Size")
         key = value_bytes[consts.DATA_HEADER_SIZE : consts.DATA_HEADER_SIZE + key_len]
@@ -170,7 +170,9 @@ class CaskDataFile(CaskFile):
             if crc != existing_crc:
                 raise CaskIOException("Mismatching CRC")
             entry_size = consts.DATA_HEADER_SIZE + len(key) + len(value)
-            yield key.decode("utf-8"), entry_size, current_offset, timestamp
+            yield key.decode(
+                "utf-8"
+            ), entry_size, current_offset, timestamp, value.decode("utf-8")
             current_offset = self._rfh.tell()
             header = self._rfh.read(consts.DATA_HEADER_SIZE)
 

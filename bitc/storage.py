@@ -15,20 +15,20 @@ from bitc import utils
 
 
 class CaskKeyDirEntry(object):
-    def __init__(self, file_obj, value_size, value_pos, tstamp):
+    def __init__(self, file_name, value_size, value_pos, tstamp):
         self.value_size = value_size
         self.value_pos = value_pos
         self.tstamp = tstamp
-        self.file_obj = file_obj
+        self.file_name = file_name
 
     def __repr__(self):
-        return "size={},position={},timestamp={}".format(
-            self.value_size, self.value_pos, self.tstamp
+        return "size={},position={},timestamp={}, filename={}".format(
+            self.value_size, self.value_pos, self.tstamp, self.file_name
         )
 
 
-class CaskFilePersistor(object):
-    def __init__(self, file_path, os_sync=True, max_file_size=100000):
+class CaskStorage(object):
+    def __init__(self, file_path, os_sync=True, max_file_size=100):
         self._file_path = file_path
         self._data_file = None
         self._hint_file = None
@@ -108,3 +108,104 @@ class CaskFilePersistor(object):
             )
         )
         return data_file.read(entry_offset, entry_size)
+
+    def merge(self):
+        try:
+            with self._lock:
+                if self._merge_running:
+                    return False, None, None
+                else:
+                    self._merge_running = True
+                files_to_merge = utils.get_datafiles(self._file_path)
+                if not files_to_merge or len(files_to_merge) < 3:
+                    return True, {}, None
+                # Leave last file where current writes are landing
+                files_to_merge = files_to_merge[:-1]
+            key_val_map = {}
+            merged_index = {}
+            last_id = utils.get_file_id_from_absolute_path(files_to_merge[-1])
+            for datafile in reversed(files_to_merge):
+                datafile_obj = self._read_files[os.path.basename(datafile)]
+                for (
+                    key,
+                    _,
+                    _,
+                    timestamp,
+                    value,
+                ) in datafile_obj.read_all_entries():
+                    if (
+                        key not in key_val_map
+                        or key_val_map[key][1] == datafile_obj.basename
+                    ):
+                        key_val_map[key] = (value, datafile_obj.basename, timestamp)
+            with tempfile.TemporaryDirectory(dir=self._file_path) as tempdir:
+                new_data_file = CaskDataFile(
+                    tempdir, last_id, False, os_sync=self._os_sync
+                )
+                new_hint_file = CaskHintFile(tempdir, last_id, False)
+                for key, metadata in key_val_map.items():
+                    current_offset = new_data_file.size
+                    new_data_file.write(metadata[2], key, metadata[0])
+                    entry_size = DATA_HEADER_SIZE + len(key) + len(metadata[0])
+                    new_hint_file.write(key, metadata[2], current_offset, entry_size)
+                    merged_index[key] = (
+                        entry_size,
+                        current_offset,
+                        timestamp,
+                    )
+                with self._lock:
+                    new_data_file.close()
+                    new_hint_file.close()
+                    os.rename(
+                        new_data_file.name,
+                        os.path.join(self._file_path, new_data_file.basename),
+                    )
+                    os.rename(
+                        new_hint_file.name,
+                        os.path.join(self._file_path, new_hint_file.basename),
+                    )
+                    # Delete except last file, which has been created just now
+                    files_to_delete = files_to_merge[:-1]
+                    for file_path in files_to_delete:
+                        os.remove(file_path)
+                        os.remove(utils.get_hint_filename_for_data_file(file_path))
+                        del self._read_files[os.path.basename(file_path)]
+                    new_data_file = CaskDataFile(
+                        self._file_path, last_id, True, os_sync=self._os_sync
+                    )
+                    self._read_files[new_data_file.basename] = new_data_file
+                    return True, merged_index, new_data_file
+        finally:
+            self._merge_running = False
+
+    def rebuild_index(self):
+        data_files = utils.get_datafiles(self._file_path)
+        hint_files = utils.get_hintfiles(self._file_path)
+        if not data_files:
+            return []
+        for index, data_file in enumerate(data_files):
+            data_file_id = utils.get_file_id_from_absolute_path(data_file)
+            data_file_obj = CaskDataFile(self._file_path, data_file_id, True)
+            hint_file_path = utils.get_hint_filename_for_data_file(data_file)
+            self._read_files[data_file_obj.basename] = data_file_obj
+            if hint_file_path in hint_files:
+                hint_file = CaskHintFile(self._file_path, data_file_id, True)
+                for (
+                    key,
+                    entry_size,
+                    entry_offset,
+                    timestamp,
+                ) in hint_file.read_all_entries():
+                    yield key, CaskKeyDirEntry(
+                        data_file_obj.basename, entry_size, entry_offset, timestamp
+                    )
+            else:
+                for (
+                    key,
+                    entry_size,
+                    entry_offset,
+                    timestamp,
+                ) in data_file_obj.read_all_entries():
+                    yield key, CaskKeyDirEntry(
+                        data_file_obj.basename, entry_size, entry_offset, timestamp
+                    )

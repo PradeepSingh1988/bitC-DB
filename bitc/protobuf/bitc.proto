@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+// BitC-DB KV Service Definition.
+service BitCdbKeyValueService {
+  // RequestVote handler
+  rpc get (GetRequest) returns (GetReply) {}
+  rpc put (PutRequest) returns (PutReply) {}
+  rpc delete (DeleteRequest) returns (DeleteReply) {}
+
+}
+
+// The request message containing the Get key Parameters.
+message GetRequest {
+  // key
+  string key = 1;
+}
+
+
+// The request message containing the Put key Parameters.
+message PutRequest {
+    // key
+    string key = 1;
+    // value
+    string value = 2;
+}
+
+message DeleteRequest {
+    // key
+  string key = 1;
+}
+
+  // The response message containing Get Key response
+message GetReply {
+  // value
+  string value = 1;
+}
+
+// The response message containing Put Key response
+message PutReply {
+    
+}
+
+
+// The response message containing Delete Key response
+message DeleteReply {
+    bool result = 1;
+}

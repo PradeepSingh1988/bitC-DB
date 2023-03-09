@@ -1,15 +1,12 @@
 from threading import Lock
 
-from bitc import utils
-from bitc.cask_file import CaskDataFile, CaskHintFile
 from bitc.storage import CaskKeyDirEntry
 
 
 class KeyDir(object):
-    def __init__(self, file_path):
+    def __init__(self):
         self._index = {}
         self._lock = Lock()
-        self._file_path = file_path
 
     def add(self, key, value):
         with self._lock:
@@ -23,37 +20,15 @@ class KeyDir(object):
         with self._lock:
             return self._index.get(key)
 
-    def rebuild(self):
-        data_files = utils.get_datafiles(self._file_path)
-        hint_files = utils.get_hintfiles(self._file_path)
-        if not data_files:
-            return []
-        for index, data_file in enumerate(data_files):
-            data_file_id = utils.get_file_id_from_absolute_path(data_file)
-            data_file_obj = CaskDataFile(self._file_path, data_file_id, True)
-            hint_file_path = utils.get_hint_filename_for_data_file(data_file)
-            if hint_file_path in hint_files:
-                hint_file = CaskHintFile(self._file_path, data_file_id, True)
-                for (
-                    key,
-                    entry_size,
-                    entry_offset,
-                    timestamp,
-                ) in hint_file.read_all_entries():
+    def merge_index(self, new_index, data_file):
+        with self._lock:
+            for key, metadata in new_index.items():
+                entry = self._index.get(key)
+                if (
+                    entry is not None
+                    and entry.tstamp == metadata[2]
+                    and entry.file_obj != data_file
+                ):
                     self._index[key] = CaskKeyDirEntry(
-                        data_file_obj, entry_size, entry_offset, timestamp
+                        data_file, metadata[0], metadata[1], metadata[2]
                     )
-            elif index == len(data_files) - 1:
-                for (
-                    key,
-                    entry_size,
-                    entry_offset,
-                    timestamp,
-                ) in data_file_obj.read_all_entries():
-                    self._index[key] = CaskKeyDirEntry(
-                        data_file_obj, entry_size, entry_offset, timestamp
-                    )
-            else:
-                raise utils.CaskIOException(
-                    "Hint file not found, although file is not last data file"
-                )

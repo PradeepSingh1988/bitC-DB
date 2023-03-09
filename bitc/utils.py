@@ -10,13 +10,15 @@ class CaskIOException(Exception):
 
 def get_datafiles(file_path):
     return sorted(
-        glob.glob(os.path.join(file_path, consts.DATA_FILE_NAME_FORMAT.format("*")))
+        glob.glob(os.path.join(file_path, consts.DATA_FILE_NAME_FORMAT.format("*"))),
+        key=lambda x: int(os.path.basename(x).split(".")[0]),
     )
 
 
 def get_hintfiles(file_path):
     return sorted(
-        glob.glob(os.path.join(file_path, consts.HINT_FILE_NAME_FORMAT.format("*")))
+        glob.glob(os.path.join(file_path, consts.HINT_FILE_NAME_FORMAT.format("*"))),
+        key=lambda x: int(os.path.basename(x).split(".")[0]),
     )
 
 
