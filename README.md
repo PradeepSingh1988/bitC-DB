@@ -1,7 +1,7 @@
 # bitC-DB
 
 This repo implments a simple Key Value Store based on [BitCask](https://riak.com/assets/bitcask-intro.pdf) storage format.
-BitC-DB DB supports PUT, GET, DELETE methods over gRPC protocol.
+BitC-DB supports PUT, GET and DELETE methods over gRPC protocol.
 
 The implementation supports hint files, index rebuilding at server startup and compaction of logs as well.
 
