@@ -90,7 +90,7 @@ class BitCdbRpcClient(RPCClient):
         try:
             request = bitc_pb2.DeleteRequest(key=key)
             stub = bitc_pb2_grpc.BitCdbKeyValueServiceStub(self._conn())
-            response = stub.get(request)
+            response = stub.delete(request)
             return response
         except grpc.RpcError as rpc_error:
             raise RPCFailedError(
@@ -109,3 +109,6 @@ if __name__ == "__main__":
     print(client.get("test").value)
     client.put("test", "19")
     print(client.get("test").value)
+    print(client.delete("test").result)
+    print(client.get("test").value)
+    print(client.delete("test").result)

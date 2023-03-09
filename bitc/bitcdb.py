@@ -8,14 +8,16 @@ from bitc.storage import CaskStorage, CustomAdapter
 
 
 class BitCdb(bitc_pb2_grpc.BitCdbKeyValueServiceServicer):
-    def __init__(self, file_path=".", merge_interval=3600 * 12):
+    def __init__(self, file_path, cask_file_size, merge_interval=3600 * 12):
         self.logger = CustomAdapter(
             logging.getLogger(__name__),
             {"logger": "{}".format("CASK")},
         )
         self._key_dir = KeyDir()
         self._file_path = file_path
-        self._persistor = CaskStorage(file_path)
+        self._persistor = CaskStorage(
+            file_path, os_sync=True, max_file_size=cask_file_size
+        )
         self._merge_interval_seconds = merge_interval
         # This can be moved out of init to boost up start process
         self._build_key_dir()

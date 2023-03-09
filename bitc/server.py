@@ -13,8 +13,8 @@ setup_logger()
 LOG = logging.getLogger(__name__)
 
 
-def serve(port, db_dir, merge_interval):
-    kv_svc = BitCdb(db_dir, merge_interval)
+def serve(port, db_dir, merge_interval, cask_file_size):
+    kv_svc = BitCdb(db_dir, cask_file_size, merge_interval)
     port = str(port)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=20))
     bitc_pb2_grpc.add_BitCdbKeyValueServiceServicer_to_server(kv_svc, server)
@@ -38,10 +38,17 @@ def main():
         default=3600 * 12,
         help="File merge interval",
     )
+    parser.add_argument(
+        "--max-cask-file-size",
+        required=False,
+        default=100 * 1000 * 1000,
+        help="Max cask file size in bytes",
+    )
     args = parser.parse_args()
+    cask_file_size = int(args.max_cask_file_size)
     merge_interval = int(args.merge_interval)
     port = int(args.port)
-    serve(port, args.db_dir, merge_interval)
+    serve(port, args.db_dir, merge_interval, cask_file_size)
 
 
 if __name__ == "__main__":
