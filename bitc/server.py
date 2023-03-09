@@ -48,7 +48,7 @@ def main():
     cask_file_size = int(args.max_cask_file_size)
     merge_interval = int(args.merge_interval)
     port = int(args.port)
-    serve(port, args.db_dir, merge_interval, cask_file_size)
+    serve(args.host, port, args.db_dir, merge_interval, cask_file_size)
 
 
 if __name__ == "__main__":
