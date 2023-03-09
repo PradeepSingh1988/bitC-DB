@@ -19,6 +19,7 @@ class BitCdb(bitc_pb2_grpc.BitCdbKeyValueServiceServicer):
         self._merge_interval_seconds = merge_interval
         # This can be moved out of init to boost up start process
         self._build_key_dir()
+        self._schedule_merge_timer()
 
     def _schedule_merge_timer(self):
         self._timer = Timer(self._merge_interval_seconds, self._merge)
