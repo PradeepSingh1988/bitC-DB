@@ -69,7 +69,7 @@ class CaskFile(object):
             self._wfh = open(file_name, "a+b")
         else:
             if not os.path.exists(file_name):
-                raise CaskIOException("file {} not found")
+                raise CaskIOException("file {} not found".format(file_name))
             self._rfh = open(file_name, "r+b")
 
     @property
@@ -159,7 +159,7 @@ class CaskDataFile(CaskFile):
 
     def read_all_entries(self):
         if self._rfh is None:
-            raise CaskIOException("File {} is not opened in RO mode")
+            raise CaskIOException("File {} is not opened in RO mode".format(self.name))
         current_offset = self._rfh.tell()
         header = self._rfh.read(consts.DATA_HEADER_SIZE)
         while header:

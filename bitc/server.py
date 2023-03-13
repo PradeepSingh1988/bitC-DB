@@ -31,7 +31,7 @@ def main():
     )
 
     parser.add_argument("--db-dir", required=True, help="database file directory")
-    parser.add_argument("--port", required=True, help="Port")
+    parser.add_argument("--port", default=12345, help="Port")
     parser.add_argument(
         "--merge-interval",
         required=False,
@@ -48,7 +48,7 @@ def main():
     cask_file_size = int(args.max_cask_file_size)
     merge_interval = int(args.merge_interval)
     port = int(args.port)
-    serve(args.host, port, args.db_dir, merge_interval, cask_file_size)
+    serve(port, args.db_dir, merge_interval, cask_file_size)
 
 
 if __name__ == "__main__":
