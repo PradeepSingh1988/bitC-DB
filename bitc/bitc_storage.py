@@ -15,11 +15,11 @@ from bitc import utils
 
 
 class CaskKeyDirEntry(object):
-    def __init__(self, file_name, value_size, value_pos, tstamp):
+    def __init__(self, file_obj, value_size, value_pos, tstamp):
         self.value_size = value_size
         self.value_pos = value_pos
         self.tstamp = tstamp
-        self.file_name = file_name
+        self.file_obj = file_obj
 
     def __repr__(self):
         return "size={},position={},timestamp={}, filename={}".format(
@@ -97,16 +97,14 @@ class CaskStorage(object):
             self._hint_file.write(key, timestamp, current_offset, entry_size)
             self._key_dir.add(
                 key,
-                CaskKeyDirEntry(
-                    self._data_file.basename, entry_size, current_offset, timestamp
-                ),
+                CaskKeyDirEntry(self._data_file, entry_size, current_offset, timestamp),
             )
 
     def retrieve(self, key):
         with self._lock:
             entry = self._key_dir.get(key)
             if entry is not None:
-                data_file = self._read_files[entry.file_name]
+                data_file = self._read_files[entry.file_obj.basename]
                 self.logger.debug(
                     "Reading size {} from offset {} from file {}".format(
                         entry.value_size, entry.value_pos, data_file
@@ -191,7 +189,7 @@ class CaskStorage(object):
                         self._file_path, last_id, True, os_sync=self._os_sync
                     )
                     self._read_files[new_data_file.basename] = new_data_file
-                    self._key_dir.merge_index(merged_index, new_data_file.basename)
+                    self._key_dir.merge_index(merged_index, new_data_file)
         finally:
             self._merge_running = False
 
@@ -216,7 +214,7 @@ class CaskStorage(object):
                     self._key_dir.add(
                         key,
                         CaskKeyDirEntry(
-                            data_file_obj.basename, entry_size, entry_offset, timestamp
+                            data_file_obj, entry_size, entry_offset, timestamp
                         ),
                     )
             else:
@@ -229,6 +227,6 @@ class CaskStorage(object):
                     self._key_dir.add(
                         key,
                         CaskKeyDirEntry(
-                            data_file_obj.basename, entry_size, entry_offset, timestamp
+                            data_file_obj, entry_size, entry_offset, timestamp
                         ),
                     )
