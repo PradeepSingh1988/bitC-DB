@@ -3,7 +3,39 @@
 This repo implments a simple Key Value Store based on [BitCask](https://riak.com/assets/bitcask-intro.pdf) storage format.
 BitC-DB supports PUT, GET and DELETE methods over gRPC protocol.
 
+## Storage
+
+BitC-DB **appends** each record to a data file. Once data file size reaches a threshold, it closes that
+file and opens a new file for writing. It never opens closed files for writing again. These older files
+will be used  only for reading the records.
+
+Bit Cask persists all records on the disk in following format:
+
++----+-------------+----------+------------+-----+------+
+|CRC | Time Stamp  | Key Size | Value Size | key | Value|
++----+-------------+----------+------------+-----+------+
+
+It also maintains an in-memory index for each key. This in-mrmory index can be implemented using various
+data structures like hash maps, tries, skip lists, R-B Trees, AVL trees etc. BitC-DB uses hashmap for index.
+
+Index format is like below:
+
+         +--------+-------------+------------+-------------+-----------+
+key -->  |file_id | Time Stamp  | Value Size | Value Offset| timestamp |
+         +--------+-------------+------------+-------------+-----------+
+
+When we need to find a value for given key, we can see the index and find the file and offset where we can find the value.
+
+Over the time number of datafiles will grow. BitC-DB runs a periodic compaction thread, which clubs multiple data files and merge them
+into one single file. In the process, it removes all the duplicate entries for keys present in different files and keeps the latest entry only.
+
+Bit Cask like storage is suitable when there are less number of keys (so that they all can fit in memory) having very frequent updates.
+This kind of storage is suitable for high writes as compared to reads. No seek is required for writes, as they are always appneded to a file.
+Read requires a seek since it needs to read the data randomly from files.
+
 The implementation supports hint files, index rebuilding at server startup and compaction of logs as well.
+
+## Running BitC-DB
 
 ### Dependencies
 BitC-DB needs `grpc` package in order to run. Please install it using below command.
