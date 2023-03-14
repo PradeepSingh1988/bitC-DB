@@ -10,19 +10,21 @@ file and opens a new file for writing. It never opens closed files for writing a
 will be used  only for reading the records.
 
 Bit Cask persists all records on the disk in following format:
-
+```
 +----+-------------+----------+------------+-----+------+
 |CRC | Time Stamp  | Key Size | Value Size | key | Value|
 +----+-------------+----------+------------+-----+------+
-
+```
 It also maintains an in-memory index for each key. This in-mrmory index can be implemented using various
 data structures like hash maps, tries, skip lists, R-B Trees, AVL trees etc. BitC-DB uses hashmap for index.
 
 Index format is like below:
 
-         +--------+-------------+------------+-------------+-----------+
-key -->  |file_id | Time Stamp  | Value Size | Value Offset| timestamp |
-         +--------+-------------+------------+-------------+-----------+
+```
+        +--------+-------------+------------+-------------+-----------+
+key --> |file_id | Time Stamp  | Value Size | Value Offset| timestamp |
+        +--------+-------------+------------+-------------+-----------+
+```
 
 When we need to find a value for given key, we can see the index and find the file and offset where we can find the value.
 
