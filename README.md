@@ -44,7 +44,7 @@ The BitC-DB implementation supports:
 ## Running BitC-DB
 
 ### Dependencies
-BitC-DB needs `grpc` package in order to run. Please install it using below command.
+BitC-DB uses `grpc` package for communication between client and server. Please install it using below command.
 
 `pip install grpcio==1.51.1 grpcio-tools==1.51.1`
 
