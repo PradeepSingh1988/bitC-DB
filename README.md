@@ -35,7 +35,11 @@ Bit Cask like storage is suitable when there are less number of keys (so that th
 This kind of storage is suitable for high writes as compared to reads. No seek is required for writes, as they are always appneded to a file.
 Read requires a seek since it needs to read the data randomly from files.
 
-The implementation supports hint files, index rebuilding at server startup and compaction of logs as well.
+The BitC-DB implementation supports:
+
+* hint files
+* index rebuilding at server startup
+* compaction of logs
 
 ## Running BitC-DB
 
